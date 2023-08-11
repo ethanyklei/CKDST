@@ -1,0 +1,59 @@
+common:
+  log_format: simple
+  fp16: true
+  seed: 2021
+  reset_logging: true
+  tensorboard_logdir: ${checkpoint.save_dir}/tensorboard
+
+distributed_training:
+  ddp_backend: no_c10d
+
+dataset:
+  max_tokens: 8192
+  num_workers: 1
+  skip_invalid_size_inputs_valid_test: true
+  train_subset: train
+  valid_subset: valid
+
+task:
+  _name: translation
+  data: ???
+  source_lang: en
+  target_lang: es
+  max_target_positions: 1024
+  max_source_positions: 1024
+  eval_bleu: true
+  eval_bleu_args: '{"beam": 4}'
+  eval_bleu_remove_bpe: sentencepiece
+
+model:
+  _name: transformer
+  share_all_embeddings: true
+  base_layers: 0
+  
+criterion:
+  _name: label_smoothed_cross_entropy
+  label_smoothing: 0.1
+  report_accuracy: true
+
+optimizer:
+  _name: adam
+  adam_betas: (0.9,0.98)
+  weight_decay: 0.0
+
+optimization:
+  update_freq: [1]
+  lr: [5e-4]
+
+lr_scheduler:
+  _name: inverse_sqrt
+  warmup_updates: 4000
+
+checkpoint:
+  save_interval_updates: 2000
+  keep_interval_updates: 25
+  keep_last_epochs: 15
+  patience: 20
+  best_checkpoint_metric: bleu
+  maximize_best_checkpoint_metric: true
+  save_dir: ???

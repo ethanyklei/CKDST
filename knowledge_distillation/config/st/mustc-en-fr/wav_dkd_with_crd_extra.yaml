@@ -1,0 +1,93 @@
+common:
+  log_format: simple
+  fp16: true
+  seed: 2021
+  reset_logging: true
+  tensorboard_logdir: ${checkpoint.save_dir}/tensorboard
+
+distributed_training:
+  ddp_backend: no_c10d
+
+dataset:
+  max_tokens: 1000000
+  max_tokens_valid: 1000000
+  num_workers: 1
+  skip_invalid_size_inputs_valid_test: true
+  train_subset: train_st_audio
+  valid_subset: dev_st_audio
+
+task:
+  _name: speech_to_text_joint_with_extra_mt
+  data: ???
+  config_yaml: config_st_audio_bi.yaml
+  max_source_positions: 1000000
+  max_target_positions: 1024
+  max_text_positions: 1024
+  eval_bleu: true
+  eval_bleu_args: '{"beam": 4, "max_len_b": 400}'
+  eval_bleu_remove_bpe: sentencepiece
+  mode: speech
+  langpair: en-fr
+
+model:
+  _name: s2t_wav_transformer
+  share_all_embeddings: true
+  load_pretrained_encoder_from: /path/to/pretrained/mt
+  load_pretrained_decoder_from: /path/to/pretrained/mt
+  w2v_cfg:
+    w2v_path: ???
+    freeze_w2v: false
+    apply_mask: false
+    override_w2v_args: false
+    feature_grad_mult: 0.1
+  encoder_embed_dim: 512
+  encoder_ffn_embed_dim: 2048
+  encoder_layers: 6
+  encoder_attention_heads: 8
+  encoder_normalize_before: false
+  encoder_learned_pos: false
+  decoder_embed_dim: 512
+  decoder_ffn_embed_dim: 2048
+  decoder_layers: 6
+  decoder_attention_heads: 8
+  decoder_normalize_before: false
+  decoder_learned_pos: false
+  dropout: 0.3
+
+criterion:
+  _name: s2t_dkd_with_crd
+  label_smoothing: 0.1
+  report_accuracy: true
+  dkd_weight: 0.8
+  tckd_weight: 1.0
+  nckd_weight: 4.0
+  dkd_temperature: 1.0
+  crd_warmup: 4000
+  crd_weight: 1.0
+  crd_temperature: 0.07
+  crd_pos: bottom
+  crd_freeze_tea: false
+  mt_weight: 1.0
+
+optimizer:
+  _name: adam
+  adam_betas: (0.9,0.98)
+  weight_decay: 0.0
+
+optimization:
+  update_freq: [2]
+  lr: [1e-4]
+  clip_norm: 10.0
+
+lr_scheduler:
+  _name: inverse_sqrt
+  warmup_updates: 25000
+
+checkpoint:
+  save_interval_updates: 1000
+  keep_interval_updates: 20
+  patience: 15
+  no_epoch_checkpoints: true
+  best_checkpoint_metric: bleu
+  maximize_best_checkpoint_metric: true
+  save_dir: ???
